@@ -1,5 +1,5 @@
 # Build stage
-FROM node:16 as builder
+FROM node:14 as builder
 
 # Set working directory
 WORKDIR /app
@@ -7,23 +7,24 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies with legacy peer deps flag due to Angular 6.x
+RUN npm install --legacy-peer-deps
+
+# Install global Angular CLI matching project version
+RUN npm install -g @angular/cli@6.2.5
 
 # Copy project files
 COPY . .
 
 # Build the application
-RUN npm run build
+# Adding --no-progress to reduce log output
+RUN npm run build -- --no-progress
 
 # Production stage
 FROM nginx:alpine
 
 # Copy built assets from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Copy nginx configuration (if you have custom configuration)
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Expose port 8080 (Cloud Run requirement)
 EXPOSE 8080
