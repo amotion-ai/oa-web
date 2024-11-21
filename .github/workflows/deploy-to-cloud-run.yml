@@ -2,13 +2,12 @@ name: Build and Deploy to Cloud Run
 
 on:
   push:
-    branches: [ dev ]  # Adjust this to your main branch name
+    branches: [ dev ]
 
 env:
-  PROJECT_ID: your-project-id    # TODO: update this
-  REGION: us-central1           # TODO: update this
-  REPOSITORY: oa-web            # TODO: update this
-  SERVICE_NAME: oa-web-service  # TODO: update this
+  PROJECT_ID: ${{ secrets.PROJECT_ID }}
+  REGION: ${{ secrets.REGION }}
+  SERVICE_NAME: ${{ secrets.SERVICE_NAME }}
 
 jobs:
   build-and-deploy:
@@ -30,13 +29,13 @@ jobs:
 
     - name: Build and push container
       run: |
-        docker build -t gcr.io/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}:${{ github.sha }} .
-        docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}:${{ github.sha }}
+        docker build -t gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }} .
+        docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
 
     - name: Deploy to Cloud Run
       uses: google-github-actions/deploy-cloudrun@v1
       with:
         service: ${{ env.SERVICE_NAME }}
         region: ${{ env.REGION }}
-        image: gcr.io/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}:${{ github.sha }}
+        image: gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
         flags: '--allow-unauthenticated'
