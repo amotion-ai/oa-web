@@ -1,0 +1,42 @@
+name: Build and Deploy to Cloud Run
+
+on:
+  push:
+    branches: [ dev ]  # Adjust this to your main branch name
+
+env:
+  PROJECT_ID: your-project-id    # TODO: update this
+  REGION: us-central1           # TODO: update this
+  REPOSITORY: oa-web            # TODO: update this
+  SERVICE_NAME: oa-web-service  # TODO: update this
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        project_id: ${{ env.PROJECT_ID }}
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        export_default_credentials: true
+
+    - name: Authorize Docker push
+      run: gcloud auth configure-docker
+
+    - name: Build and push container
+      run: |
+        docker build -t gcr.io/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}:${{ github.sha }} .
+        docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}:${{ github.sha }}
+
+    - name: Deploy to Cloud Run
+      uses: google-github-actions/deploy-cloudrun@v1
+      with:
+        service: ${{ env.SERVICE_NAME }}
+        region: ${{ env.REGION }}
+        image: gcr.io/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}:${{ github.sha }}
+        flags: '--allow-unauthenticated'
